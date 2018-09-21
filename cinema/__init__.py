@@ -1,6 +1,9 @@
 import os
+import datetime
 
 from flask import Flask
+from cinema.models import db, migrate
+import cinema.showtime_scraper 
 
 
 def create_app(test_config=None):
@@ -27,7 +30,6 @@ def create_app(test_config=None):
         pass
 
     # db
-    from .models import db, migrate
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -36,5 +38,17 @@ def create_app(test_config=None):
     def hello():
         print(os.path.dirname(__file__))
         return 'Hello, World!'
+
+    @app.route('/scrape')
+    def scrape():
+        cinema_ls = cinema.showtime_scraper.cinema_ls
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        for cinema_name in cinema_ls:
+            showtimes = cinema.showtime_scraper.scrape(cinema_name, 'Tomorrow')
+            for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
+                db.session.add(s)
+            db.session.commit() # commit for each theater
+        # TODO: delegate the job to a worker; return a pointer to the result
+        return 'Done!'
 
     return app
