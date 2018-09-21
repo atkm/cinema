@@ -51,6 +51,7 @@ def scrape(cinema_name, date='Today'):
     #    f.write(cinema_nova.text)
     return parse_showtimes(cinema_html)
 
+
 def _get_or_create(session, Model, **kw):
     obj = session.query(Model).filter_by(**kw).first()
     if obj:
@@ -58,21 +59,31 @@ def _get_or_create(session, Model, **kw):
     else:
         return Model(**kw)
 
-# TODO: don't do anything if rows for the day already exists.
+# TODO: 
 # How to deal with international dates? 
-# date: datetime.date object
 def create_showtimes(session, cinema_name, date, showtimes):
+    """
+    Returns a generator of Showtimes for the given date and theater.
+    date: datetime.date object.
+    """
     for title, time_ls in showtimes.items():
-        # get_or_create
-        theater = _get_or_create(session, Theater, name=cinema_name)
-        film = _get_or_create(session, Film, name=title)
-        yield Showtime(
-                showdate = date, # TODO i18n
-                theater = theater,
-                film = film,
-                count = len(time_ls),
-                )
+        # Don't do anything if rows for the day already exists.
+        if not session.query(Showtime, Film, Theater)\
+                .join(Film).join(Theater)\
+                .filter(Showtime.showdate == date)\
+                .filter(Film.name == title)\
+                .first():
+            # get_or_create
+            theater = _get_or_create(session, Theater, name=cinema_name)
+            film = _get_or_create(session, Film, name=title)
+            yield Showtime(
+                    showdate = date, # TODO i18n
+                    theater = theater,
+                    film = film,
+                    count = len(time_ls),
+                    )
 
     
 if __name__ == '__main__':
     print(scrape('Cinema Nova'))
+

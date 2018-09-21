@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Upcoming Shows</title>
+    </head>
+    <body>
+        <h1>Upcoming Shows</h1>
+        <h2>Tomorrow</h2>
+        {% for cinema, films in upcoming_shows.items() %}
+        <table>
+            <tr>
+                <th>{{ cinema }}</th>
+            </tr>
+            {% for f in films %}
+            <tr>
+                <td>{{ f }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endfor %}
+    </body>
+</html>

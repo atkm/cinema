@@ -1,7 +1,9 @@
 import os
 import datetime
 
-from flask import Flask
+from flask import (
+        Flask, url_for, redirect
+        )
 from cinema.models import db, migrate
 import cinema.showtime_scraper 
 
@@ -33,6 +35,10 @@ def create_app(test_config=None):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    @app.route('/')
+    def root():
+        return redirect(url_for('shows.upcoming_shows'))
+
     # a simple page that says hello
     @app.route('/hello')
     def hello():
@@ -48,7 +54,10 @@ def create_app(test_config=None):
             for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
                 db.session.add(s)
             db.session.commit() # commit for each theater
-        # TODO: delegate the job to a worker; return a pointer to the result
         return 'Done!'
 
+    from . import shows
+    app.register_blueprint(shows.bp)
+
     return app
+

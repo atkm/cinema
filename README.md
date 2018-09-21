@@ -1,8 +1,9 @@
 - TODO:
     + Scraping should happen at the start of a day (i18n is an issue), or only scrape information from future dates.
-    + Delegate scraping jobs to workers at the /scrape endpoint.
-    + Add a uniqueness constraint on the Showtime model by date,
-        either at the model or application level.
+
+- Thoughts:
+    + Denormalize tables?
+    + Delegate scraping jobs to workers at the /scrape endpoint?
 
 - Tests:
     + pytest. Run with `python -m pytest`.
@@ -14,7 +15,7 @@
     + Local: Roxie, New Parkway, Shattuck, California
     + Bad: AMC Metreon 16, UA Berkeley 7
 - Product: find actually indie films
-    + Good theaters - Bad, or 
+    + Good theaters minus Bad, or 
     + Symmetric differences between good theaters.
 - Data to collect:
     + Scrape the google showtimes api 
