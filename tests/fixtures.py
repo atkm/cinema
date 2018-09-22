@@ -55,7 +55,7 @@ def test_session(test_db):
         params = cinema.showtime_scraper.cinema_ls)
 def cinema_html_tomorrow_with_name(request):
     cinema_name = request.param
-    html = cinema.showtime_scraper.get_html(cinema_name, 'Tomorrow')
+    html = cinema.showtime_scraper.get_html(cinema_name, 1)
     # can you set an attribute to a string?
     yield (cinema_name, html)
 

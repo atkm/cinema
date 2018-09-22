@@ -37,7 +37,8 @@ def create_app(test_config=None):
 
     @app.route('/')
     def root():
-        return redirect(url_for('shows.upcoming_shows'))
+        #return redirect(url_for('shows.upcoming_shows'))
+        return 'Hello!'
 
     # a simple page that says hello
     @app.route('/hello')
@@ -50,7 +51,7 @@ def create_app(test_config=None):
         cinema_ls = cinema.showtime_scraper.cinema_ls
         tomorrow = datetime.date.today() + datetime.timedelta(days=1)
         for cinema_name in cinema_ls:
-            showtimes = cinema.showtime_scraper.scrape(cinema_name, 'Tomorrow')
+            showtimes = cinema.showtime_scraper.scrape(cinema_name, 1)
             for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
                 db.session.add(s)
             db.session.commit() # commit for each theater

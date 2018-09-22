@@ -2,6 +2,7 @@ from flask import (
         Blueprint, render_template
         )
 import datetime
+import itertools
 
 from cinema.models import db, Showtime, Theater, Film
 
@@ -15,7 +16,8 @@ def _get_future_shows(session, days):
             .filter(Showtime.showdate >= today)\
             .filter(Showtime.showdate <= upper_bound)
 
-# TODO: write test for the resulting html 
+
+# TODO: why is this endpoint redirecting in test_shows_tomorrow? 
 @bp.route('/')
 def upcoming_shows():
     theaters = db.session.query(Theater.name).all()
@@ -24,15 +26,13 @@ def upcoming_shows():
     for t in theaters:
         shows_at_t = shows_tomorrow.filter(Theater.name == t.name)
         shows_dict[t.name] = [s.Film.name for s in shows_at_t.all()]
-    print(shows_dict)
     return render_template('upcoming_shows.html', upcoming_shows=shows_dict)
 
 @bp.route('/indie')
 def indie_shows():
     """
-    The symmetric difference of indie theaters.
+    Compute the pairwise disjoint differences.
     """
-    # TODO: get unique shows for each theater
     shows_within_one_week = _get_future_shows(db.session, 7)
     theaters = db.session.query(Theater.name).all()
     shows_dict = dict()
@@ -40,4 +40,10 @@ def indie_shows():
         shows_at_t = shows_within_one_week\
                 .filter(Theater.name == t.name)\
                 .distinct()
-        shows_dict[t.name] = [s.Film.name for s in shows_at_t.all()]
+        shows_dict[t.name] = set([s.Film.name for s in shows_at_t.all()])
+
+    shows_dict_new = shows_dict.copy()
+    for t_new, (t, s) in itertools.product(shows_dict_new, shows_dict.items()):
+        if t_new != t:
+            shows_dict_new[t_new] = shows_dict_new[t_new].difference(s)
+    return render_template('upcoming_shows.html', upcoming_shows=shows_dict_new)

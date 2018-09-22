@@ -3,6 +3,7 @@ venv/
 
 *.pyc
 __pycache__/
+.idea
 
 instance/
 cinema/resources/*.html
