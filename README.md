@@ -9,6 +9,13 @@
     + pytest. Run with `python -m pytest`.
         Just `pytest` won't be able to find the app.
 
+- Heroku:
+    + ensure Procfile
+    + enable heroku-postgresql:hobby-dev addon
+    + heroku config:set APP_SETTINGS=config.StagingConfig --remote stage
+    + heroku config:set FLASK_APP=cinema --remote stage
+    + heroku config:set FLASK_ENV=development --remote stage
+
 - Theaters
     + Cinema Nova
     + Living Room Theater (Portland)
