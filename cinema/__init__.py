@@ -1,19 +1,32 @@
 import os
 import datetime
+import time
 
 from flask import (
-        Flask, url_for, redirect
+        Flask, url_for, redirect, g
         )
-from cinema.models import db, migrate
 import cinema.showtime_scraper 
 
+import rq
 from rq import Queue
-from cinema.worker import redis_conn
+from rq.job import Job
+
+
+def _scrape():
+    from cinema.models import db
+    cinema_ls = cinema.showtime_scraper.cinema_ls
+    tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+    for cinema_name in cinema_ls:
+        showtimes = cinema.showtime_scraper.scrape(cinema_name, 1)
+        for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
+            db.session.add(s)
+        db.session.commit() # commit for each theater
+    # TODO: notify when done
+    return "Done!"
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    # TODO: move this to config.py, and import it through APP_SETTINGS env var.
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -29,10 +42,12 @@ def create_app(test_config=None):
         pass
 
     # db
+    from cinema.models import db, migrate
     db.init_app(app)
     migrate.init_app(app, db)
 
     # redis
+    from cinema.worker import redis_conn
     q = Queue(connection=redis_conn)
 
     @app.route('/')
@@ -45,22 +60,20 @@ def create_app(test_config=None):
     def hello():
         print(os.path.dirname(__file__))
         return 'Hello, World!'
-
+    
     @app.route('/scrape')
     def scrape():
-        job = q.enqueue_call(func = _scrape)
+        rq.push_connection(redis_conn)
+        job = q.enqueue(_scrape)
+        rq.pop_connection()
         return job.get_id()
 
-    def _scrape():
-        cinema_ls = cinema.showtime_scraper.cinema_ls
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-        for cinema_name in cinema_ls:
-            showtimes = cinema.showtime_scraper.scrape(cinema_name, 1)
-            for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
-                db.session.add(s)
-            db.session.commit() # commit for each theater
-        # TODO: notify when done
-        return None
+    @app.route('/scrape/<job_id>')
+    def job_result(job_id):
+        job = Job.fetch(job_id, redis_conn)
+        while not job.is_finished:
+            time.sleep(2)
+        return job.return_value
 
     from . import shows
     app.register_blueprint(shows.bp)

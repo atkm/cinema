@@ -1,23 +1,25 @@
 - TODO:
-    + Scraping should happen at the start of a day (i18n is an issue), or only scrape information from future dates.
-    + Delegate scraping jobs to workers at the /scrape endpoint?
+    + 
+    + Cron job. Scraping should happen at the start of a day (i18n is an issue), or only scrape information from future dates.
 
 - Thoughts:
     + Denormalize tables?
     + When do showtimes for each week become available?
     + How to transfer local data to the deployed db?
+    + Distribute jobs to multiple workers.
 
 - Tests:
     + pytest. Run with `python -m pytest`.
         Just `pytest` won't be able to find the app.
 
-- Heroku:
+- Heroku stage (production):
     + ensure Procfile
     + enable heroku-postgresql:hobby-dev addon
-    + heroku config:set APP_SETTINGS=config.StagingConfig --remote stage
+    + heroku config:set APP_SETTINGS=config.StagingConfig --remote stage (=config.ProductionConfig)
     + heroku config:set FLASK_APP=cinema --remote stage
-    + heroku config:set FLASK_ENV=development --remote stage
+    + heroku config:set FLASK_ENV=development --remote stage (=production)
     + heroku run flask db upgrade --remote stage
+    + heroku addons:create redistogo:nano --remote stage
 
 - Theaters
     + Good: Cinema Nova, Living Room Theater (Portland)

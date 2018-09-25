@@ -1,4 +1,5 @@
 import pytest
+import pkg_resources
 
 import cinema
 from cinema.models import db as _db
@@ -6,6 +7,9 @@ from cinema.models import db as _db
 TEST_DATABASE_URI = "postgresql://postgres@localhost/cinema_testing"
 
 # Flask fixtures ref: http://alexmic.net/flask-sqlalchemy-pytest/
+
+with pkg_resources.resource_stream('cinema', 'resources/cinemas-test.txt') as f:
+    cinema_ls_short = [line.decode('utf-8').strip() for line in f.readlines()]
 
 # Should scope=module?
 @pytest.fixture(scope='session')
