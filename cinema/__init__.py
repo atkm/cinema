@@ -13,6 +13,8 @@ from rq.job import Job
 
 
 def _scrape():
+    # TODO: create a connection instead of sharing with the app
+    # See the official tutorial.
     from cinema.models import db
     cinema_ls = cinema.showtime_scraper.cinema_ls
     tomorrow = datetime.date.today() + datetime.timedelta(days=1)
@@ -24,16 +26,16 @@ def _scrape():
     # TODO: notify when done
     return "Done!"
 
-def create_app(test_config=None):
+def create_app(config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
 
-    if test_config is None:
+    if config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_object(os.environ['APP_SETTINGS'])
     else:
         # load the test config if passed in
-        app.config.from_mapping(test_config)
+        app.config.from_mapping(config)
 
     # ensure the instance folder exists
     try:
@@ -47,24 +49,17 @@ def create_app(test_config=None):
     migrate.init_app(app, db)
 
     # redis
-    from cinema.worker import redis_conn
-    q = Queue(connection=redis_conn)
+    from cinema.worker import redis_q, redis_conn
 
     @app.route('/')
     def root():
         #return redirect(url_for('shows.upcoming_shows'))
         return 'Hello!'
 
-    # a simple page that says hello
-    @app.route('/hello')
-    def hello():
-        print(os.path.dirname(__file__))
-        return 'Hello, World!'
-    
     @app.route('/scrape')
     def scrape():
         rq.push_connection(redis_conn)
-        job = q.enqueue(_scrape)
+        job = redis_q.enqueue(_scrape)
         rq.pop_connection()
         return job.get_id()
 

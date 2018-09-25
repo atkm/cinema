@@ -6,6 +6,7 @@ from cinema import create_app
 listen = ['default']
 redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
 redis_conn = redis.from_url(redis_url)
+redis_q = Queue(connection=redis_conn)
 
 # TODO: preload libraries (models, keyword_extraction_db) to avoid the import overhead of each worker. Ref: Performance notes section in rq docs.
 

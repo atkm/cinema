@@ -1,5 +1,7 @@
 import pytest
 import pkg_resources
+import redis
+from rq import Worker, Queue, Connection
 
 import cinema
 from cinema.models import db as _db
@@ -11,15 +13,15 @@ TEST_DATABASE_URI = "postgresql://postgres@localhost/cinema_testing"
 with pkg_resources.resource_stream('cinema', 'resources/cinemas-test.txt') as f:
     cinema_ls_short = [line.decode('utf-8').strip() for line in f.readlines()]
 
+test_config = {
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI,
+        }
+
 # Should scope=module?
 @pytest.fixture(scope='session')
-def test_app(request):
-    test_config = {
-            'TESTING': True,
-            'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI,
-            }
+def test_app():
     flask_app = cinema.create_app(test_config)
-
     # Establish an application context before running the tests.
     ctx = flask_app.app_context()
     ctx.push()
@@ -29,6 +31,14 @@ def test_app(request):
 @pytest.fixture(scope='session')
 def test_client(test_app):
     yield test_app.test_client()
+
+@pytest.fixture(scope='session')
+def test_worker():
+    app = cinema.create_app()
+    with app.app_context():
+        with Connection(redis.from_url('redis://localhost:6379')):
+            worker = Worker(list(map(Queue, ['default'])))
+            worker.work()
 
 @pytest.fixture(scope='session')
 def test_db(test_app):

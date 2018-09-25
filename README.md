@@ -1,5 +1,5 @@
 - TODO:
-    + 
+    + Make tests work with rq+workers.
     + Cron job. Scraping should happen at the start of a day (i18n is an issue), or only scrape information from future dates.
 
 - Thoughts:

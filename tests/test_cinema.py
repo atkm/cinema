@@ -1,5 +1,5 @@
 import pytest
-from tests.fixtures import test_app, test_db, test_client, test_session, cinema_html_tomorrow_with_name, cinema_html_tomorrow
+from tests.fixtures import test_app, test_worker, test_db, test_client, test_session, cinema_html_tomorrow_with_name, cinema_html_tomorrow
 
 import pkg_resources
 import datetime
@@ -13,8 +13,8 @@ from cinema.models import Theater, Film, Showtime
 
    
 def test_empty_db(test_client):
-    rv = test_client.get('/hello')
-    assert b'Hello, World!' == rv.data
+    rv = test_client.get('/')
+    assert b'Hello!' == rv.data
 
 def assert_dict_nonempty(d):
     assert len(d) > 0
@@ -79,11 +79,13 @@ def test_insert_showtimes(test_session, cinema_html_tomorrow_with_name):
     assert test_session.query(Showtime.id).count() > 0
 
 
-def test_scrape_endpoint(test_session, test_client):
+def test_scrape_endpoint(test_session, test_client, test_worker):
     response = test_client.get('/scrape')
     assert response.status_code == 200
-    data = response.data.decode()
-    assert data == 'Done!'
+    job_id = response.data.decode()
+    assert job_id
+    # Wait for the job to finish
+    test_client.get(f'/scrape/{job_id}')
     # Theaters exist in db, and
     # Each theater has a showtime associated with it
     for cinema_name in cinema.showtime_scraper.cinema_ls:
@@ -96,6 +98,8 @@ def test_scrape_endpoint(test_session, test_client):
 def test_no_duplicate_inserts(test_session, test_client):
     response1 = test_client.get('/scrape')
     assert response1.status_code == 200
+    job_id = response1.data.decode()
+    test_client.get(f'/scrape/{job_id}')
 
     showtimes_dict = dict()
     for cinema_name in cinema.showtime_scraper.cinema_ls:
