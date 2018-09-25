@@ -1,9 +1,11 @@
 - TODO:
     + Scraping should happen at the start of a day (i18n is an issue), or only scrape information from future dates.
+    + Delegate scraping jobs to workers at the /scrape endpoint?
 
 - Thoughts:
     + Denormalize tables?
-    + Delegate scraping jobs to workers at the /scrape endpoint?
+    + When do showtimes for each week become available?
+    + How to transfer local data to the deployed db?
 
 - Tests:
     + pytest. Run with `python -m pytest`.
@@ -18,12 +20,11 @@
     + heroku run flask db upgrade --remote stage
 
 - Theaters
-    + Cinema Nova
-    + Living Room Theater (Portland)
-    + Local: Roxie, New Parkway, Shattuck, California
+    + Good: Cinema Nova, Living Room Theater (Portland)
+    + Local: Roxie, New Parkway, Shattuck, California, Elmwood
     + Bad: AMC Metreon 16, UA Berkeley 7
 
-- Product: find actually indie films
+- Analytics:
     + Good theaters minus Bad, or 
     + Symmetric differences between good theaters.
 

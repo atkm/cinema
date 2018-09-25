@@ -7,6 +7,8 @@ from flask import (
 from cinema.models import db, migrate
 import cinema.showtime_scraper 
 
+from rq import Queue
+from cinema.worker import redis_conn
 
 def create_app(test_config=None):
     # create and configure the app
@@ -30,6 +32,9 @@ def create_app(test_config=None):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    # redis
+    q = Queue(connection=redis_conn)
+
     @app.route('/')
     def root():
         #return redirect(url_for('shows.upcoming_shows'))
@@ -43,6 +48,10 @@ def create_app(test_config=None):
 
     @app.route('/scrape')
     def scrape():
+        job = q.enqueue_call(func = _scrape)
+        return job.get_id()
+
+    def _scrape():
         cinema_ls = cinema.showtime_scraper.cinema_ls
         tomorrow = datetime.date.today() + datetime.timedelta(days=1)
         for cinema_name in cinema_ls:
@@ -50,7 +59,8 @@ def create_app(test_config=None):
             for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
                 db.session.add(s)
             db.session.commit() # commit for each theater
-        return 'Done!'
+        # TODO: notify when done
+        return None
 
     from . import shows
     app.register_blueprint(shows.bp)
