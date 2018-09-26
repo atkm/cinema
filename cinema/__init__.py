@@ -49,7 +49,8 @@ def create_app(config=None):
     migrate.init_app(app, db)
 
     # redis
-    from cinema.worker import redis_q, redis_conn
+    from cinema.worker import redis_conn
+    redis_q = Queue(connection=redis_conn)
 
     @app.route('/')
     def root():
@@ -58,9 +59,7 @@ def create_app(config=None):
 
     @app.route('/scrape')
     def scrape():
-        rq.push_connection(redis_conn)
         job = redis_q.enqueue(_scrape)
-        rq.pop_connection()
         return job.get_id()
 
     @app.route('/scrape/<job_id>')
@@ -68,7 +67,7 @@ def create_app(config=None):
         job = Job.fetch(job_id, redis_conn)
         while not job.is_finished:
             time.sleep(2)
-        return job.return_value
+        return job.result
 
     from . import shows
     app.register_blueprint(shows.bp)
