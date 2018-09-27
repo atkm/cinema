@@ -1,17 +1,18 @@
 import pytest
-from tests.fixtures import test_app, test_worker, test_db, test_client, test_session, cinema_html_tomorrow_with_name, cinema_html_tomorrow
+from unittest.mock import patch
+from tests.fixtures import test_app, test_worker, test_db, test_client, test_session, _wait_for_scrape, cinema_html_tomorrow_with_name, cinema_html_tomorrow, fake_redis
 
 import pkg_resources
 import datetime
 import time
 from bs4 import BeautifulSoup
 
-import cinema
+import cinema.scrape
 import cinema.showtime_scraper
 from cinema.models import Theater, Film, Showtime
 
 
-   
+
 def test_empty_db(test_client):
     rv = test_client.get('/')
     assert b'Hello!' == rv.data
@@ -27,7 +28,7 @@ def test_showtime_parser(cinema_html_tomorrow):
     showtimes_dict = cinema.showtime_scraper.parse_showtimes(cinema_html_tomorrow)
     assert_dict_nonempty(showtimes_dict)
 
-# TODO: write a test where the database is not empty
+# TODO: write a test where the database is not empty -> a database fixture
 def test_showtime_parser_amc(test_session):
     amc_theater = 'AMC Metreon 16'
     date = datetime.date(2018,9,23)
@@ -78,31 +79,20 @@ def test_insert_showtimes(test_session, cinema_html_tomorrow_with_name):
     assert test_session.query(Theater.name).scalar() == cinema_name
     assert test_session.query(Showtime.id).count() > 0
 
-# TODO: write a version of this test where redis queue is mocked
-# TODO: write a version of this test where worker.py is used
-def test_scrape_endpoint(test_session, test_client, test_worker):
-    response = test_client.get('/scrape')
+  
+def test_scrape_endpoint_fakeredis(test_session, test_client, fake_redis):
+    response = test_client.get('/scrape', follow_redirects=True)
     assert response.status_code == 200
-    job_id = response.data.decode()
-    assert job_id
-    # Wait for the job to finish
-    # TODO: the status of the job queued at /scrape never moves to finished,
-    # even though scraping is done properly.
-    #test_client.get(f'/scrape/{job_id}')
-    # Theaters exist in db, and
-    # Each theater has a showtime associated with it
     for cinema_name in cinema.showtime_scraper.cinema_ls:
         theater = test_session.query(Theater).filter_by(name = cinema_name).first()
         assert theater
         assert theater.showtimes
 
 
-# TODO: send a request to /scrape twice. Ensure there are no duplicate entries.
-def test_no_duplicate_inserts(test_session, test_client):
-    response1 = test_client.get('/scrape')
-    assert response1.status_code == 200
-    job_id = response1.data.decode()
-    #test_client.get(f'/scrape/{job_id}')
+def test_no_duplicate_inserts(test_session, test_client, fake_redis):
+
+    response = test_client.get('/scrape', follow_redirects=True)
+    assert response.status_code == 200
 
     showtimes_dict = dict()
     for cinema_name in cinema.showtime_scraper.cinema_ls:
@@ -111,9 +101,8 @@ def test_no_duplicate_inserts(test_session, test_client):
         assert theater.showtimes
         showtimes_dict[cinema_name] = theater.showtimes
 
-
-    response2 = test_client.get('/scrape')
-    assert response2.status_code == 200
+    response = test_client.get('/scrape', follow_redirects=True)
+    assert response.status_code == 200
 
     for cinema_name in cinema.showtime_scraper.cinema_ls:
         theater = test_session.query(Theater).filter_by(name = cinema_name).first()

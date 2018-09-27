@@ -2,8 +2,10 @@ import pytest
 import pkg_resources
 import redis
 from rq import SimpleWorker, Queue, Connection
+from fakeredis import FakeStrictRedis
 
 import cinema
+import cinema.showtime_scraper
 from cinema.models import db as _db
 from cinema.worker import redis_conn
 
@@ -60,13 +62,11 @@ def test_session(test_db):
     connection.close()
     session.remove()
 
-# this works: SimpleWorker([redis_q], connection=redis_q.connection),
-# where redis_q = Queue(connection = redis_conn) defined in worker.py
 @pytest.fixture
 def test_worker(test_db):
     with Connection(redis_conn):
         worker = SimpleWorker([Queue('default')])
-        worker.work(burst=True) # Burst tells the worker to stop when there is no work on the queue
+        return worker
 
 @pytest.fixture(scope='module',
         params = cinema.showtime_scraper.cinema_ls)
@@ -80,4 +80,16 @@ def cinema_html_tomorrow_with_name(request):
 def cinema_html_tomorrow(cinema_html_tomorrow_with_name):
     _, html = cinema_html_tomorrow_with_name
     yield html
+
+@pytest.fixture
+def fake_redis():
+    cinema.scrape.redis_q = Queue(is_async=False, connection=FakeStrictRedis())
+
+def _wait_for_scrape(client, worker):
+    response = client.get('/scrape', follow_redirects=True)
+    assert response.status_code == 200
+    job_id = response.data.decode()
+    assert job_id
+    worker.work(burst=True)
+    client.get(f'/scrape/{job_id}')
  
