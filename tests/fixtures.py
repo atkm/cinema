@@ -1,5 +1,8 @@
 import pytest
+
 import pkg_resources
+import os
+
 import redis
 from rq import SimpleWorker, Queue, Connection
 from fakeredis import FakeStrictRedis
@@ -45,6 +48,14 @@ def test_db(test_app):
     yield _db
  
     _db.drop_all()
+
+@pytest.fixture
+def db_populated(test_db):
+    sql_path = pkg_resources.resource_filename('cinema', 'resources/cinema_20180926.sql')
+    restore_sh = f'psql -U postgres -d cinema_testing --quiet -1 -f {sql_path}'
+    os.system(restore_sh)
+    return test_db
+
 
 # Creates a scoped session for each test
 @pytest.fixture

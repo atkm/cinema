@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from tests.fixtures import test_app, test_worker, test_db, test_client, test_session, _wait_for_scrape, cinema_html_tomorrow_with_name, cinema_html_tomorrow, fake_redis
+from tests.fixtures import test_app, test_worker, test_db, db_populated, test_client, test_session, _wait_for_scrape, cinema_html_tomorrow_with_name, cinema_html_tomorrow, fake_redis
 
 import pkg_resources
 import datetime
@@ -28,7 +28,6 @@ def test_showtime_parser(cinema_html_tomorrow):
     showtimes_dict = cinema.showtime_scraper.parse_showtimes(cinema_html_tomorrow)
     assert_dict_nonempty(showtimes_dict)
 
-# TODO: write a test where the database is not empty -> a database fixture
 def test_showtime_parser_amc(test_session):
     amc_theater = 'AMC Metreon 16'
     date = datetime.date(2018,9,23)
