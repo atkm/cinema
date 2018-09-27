@@ -18,8 +18,9 @@ def _get_html(cinema_name, days=0):
     date = today + datetime.timedelta(days=days)
     q_str = 'https://www.google.com/search?'
     q_kwd = urllib.parse.urlencode({'q': ' '.join([cinema_name, date.strftime('%m/%d')])})
-    cinema_html = requests.get(q_str + q_kwd).text
-    return cinema_html
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    cinema_html = requests.get(q_str + q_kwd, headers=headers)
+    return cinema_html.text
 
 # wrap around _get_html to cache the html
 def get_html(cinema_name, days=0):
@@ -66,8 +67,7 @@ def _get_or_create(session, Model, **kw):
     else:
         return Model(**kw)
 
-# TODO: 
-# How to deal with international dates? 
+# TODO: How to deal with international dates? 
 def create_showtimes(session, cinema_name, date, showtimes):
     """
     Returns a generator of Showtimes for the given date and theater.

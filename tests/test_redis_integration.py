@@ -13,4 +13,4 @@ def test_scrape_endpoint(test_session, test_client, test_worker):
         assert theater
         assert theater.showtimes
 
-
+# TODO: write a test that uses a real worker
