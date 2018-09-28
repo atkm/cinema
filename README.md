@@ -1,9 +1,8 @@
 - TODO:
-    + Cron job. How to handle error when a daily scraping fails?
+    + Cron job. Log failures in cron.log (currently they go to heroku log). Handle different timezones.
     + Make tests work with rq+workers.
 
 - Thoughts:
-    + How are timezones handled?
     + Denormalize tables?
     + When do showtimes for each week become available?
     + How to transfer local data to the deployed db?
