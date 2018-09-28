@@ -49,6 +49,8 @@ def test_db(test_app):
  
     _db.drop_all()
 
+# db fixtures have scope='session' because the test_session rolls back changes made.
+# TODO: changing the scope of this fixture to 'session' slows down all tests. Why?
 @pytest.fixture
 def db_populated(test_db):
     sql_path = pkg_resources.resource_filename('cinema', 'resources/cinema_20180926.sql')

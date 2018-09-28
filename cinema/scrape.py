@@ -15,15 +15,16 @@ def _scrape():
     import cinema.showtime_scraper
     cinema_ls = cinema.showtime_scraper.cinema_ls
     # INFO: the heroku server uses UTC
-    tomorrow = datetime.date.today() + datetime.timedelta(days=1)
     for cinema_name in cinema_ls:
         try:
-            showtimes = cinema.showtime_scraper.scrape(cinema_name, 1)
-            for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, tomorrow, showtimes):
-                db.session.add(s)
-            db.session.commit() # commit for each theater
+            for k in range(7):
+                date = datetime.date.today() + datetime.timedelta(days=k)
+                showtimes = cinema.showtime_scraper.scrape(cinema_name, k)
+                for s in cinema.showtime_scraper.create_showtimes(db.session, cinema_name, date, showtimes):
+                    db.session.add(s)
+                db.session.commit() # commit for each theater
         except:
-            print(f'Scraping {cinema_name} for {tomorrow} failed.')
+            print(f'Scraping {cinema_name} for {date} failed.')
             continue
     # TODO: notify when done
     return "Done!"

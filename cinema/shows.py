@@ -8,12 +8,13 @@ from cinema.models import db, Showtime, Theater, Film
 
 bp = Blueprint('shows', __name__, url_prefix='/shows')
 
-def _get_future_shows(session, days):
+def _get_shows(session, days_begin, days_end):
     today = datetime.date.today()
-    upper_bound = today + datetime.timedelta(days=days)
+    upper_bound = today + datetime.timedelta(days=days_end)
+    lower_bound = today + datetime.timedelta(days=days_begin)
     return session.query(Showtime, Theater, Film)\
             .join(Theater).join(Film)\
-            .filter(Showtime.showdate >= today)\
+            .filter(Showtime.showdate >= lower_bound)\
             .filter(Showtime.showdate <= upper_bound)
 
 
@@ -21,7 +22,7 @@ def _get_future_shows(session, days):
 @bp.route('/')
 def upcoming_shows():
     theaters = db.session.query(Theater.name).all()
-    shows_tomorrow = _get_future_shows(db.session, 1)
+    shows_tomorrow = _get_shows(db.session, 1, 1)
     shows_dict = dict()
     for t in theaters:
         shows_at_t = shows_tomorrow.filter(Theater.name == t.name)
@@ -33,11 +34,12 @@ def indie_shows():
     """
     Compute the pairwise disjoint differences.
     """
-    shows_within_one_week = _get_future_shows(db.session, 7)
+    # shows from the past six days and this week
+    shows_this_week = _get_shows(db.session, -6, 6)
     theaters = db.session.query(Theater.name).all()
     shows_dict = dict()
     for t in theaters:
-        shows_at_t = shows_within_one_week\
+        shows_at_t = shows_this_week\
                 .filter(Theater.name == t.name)\
                 .distinct()
         shows_dict[t.name] = set([s.Film.name for s in shows_at_t.all()])

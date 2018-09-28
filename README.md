@@ -1,8 +1,9 @@
 - TODO:
+    + Cron job. How to handle error when a daily scraping fails?
     + Make tests work with rq+workers.
-    + Cron job. Scraping should happen at the start of a day (i18n is an issue), or only scrape information from future dates.
 
 - Thoughts:
+    + How are timezones handled?
     + Denormalize tables?
     + When do showtimes for each week become available?
     + How to transfer local data to the deployed db?
